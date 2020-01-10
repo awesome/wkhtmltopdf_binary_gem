@@ -31,8 +31,24 @@ suffix = case RbConfig::CONFIG['host_os']
 binary = "#{__FILE__}_#{suffix}"
 
 if File.exist?("#{binary}.gz") && !File.exist?(binary)
-  File.open binary, 'wb', 0o755 do |file|
-    Zlib::GzipReader.open("#{binary}.gz") { |gzip| file << gzip.read }
+  begin
+    File.open binary, 'wb', 0o755 do |file|
+      Zlib::GzipReader.open("#{binary}.gz") { |gzip| file << gzip.read }
+    end
+
+  ensure
+    case binary
+    when 'wkhtmltopdf_ubuntu_12.04_amd64'
+      output = `apt-get install -y xfonts-utils xfonts-base xfonts-75dpi`
+
+      dependencies_installed_successfully = !!output.lines.last.squeeze(' ').strip.match(/\d+ upgraded, \d+ newly installed, \d+ to remove and \d+ not upgraded\./)
+
+      unless dependencies_installed_successfully
+        raise 'Missing dependencies: xfonts-utils xfonts-base xfonts-75dpi' \
+              'try to manually install:' \
+              'apt-get install -y xfonts-utils xfonts-base xfonts-75dpi'
+      end
+    end
   end
 end
 
